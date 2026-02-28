@@ -1,5 +1,5 @@
 from function import Pemasukan,Pengeluaran
-print('=======TabunganKita=======\n')
+print('=======Tabungan Kita=======\n')
 saldo = 0
 while True:
     print('Pilih Program!')
