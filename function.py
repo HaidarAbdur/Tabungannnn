@@ -1,38 +1,49 @@
-def Pemasukan(saldo):
- while True:
+def Pemasukan(saldo,riwayat):
+  while True:
+       saldo = 0
        try:
-        saldo = 0
-        saldo = int(input('Masukan uang pemasukan: '))
-        if saldo <= 0:
+        uang = int(input('Masukan uang pemasukan: '))
+        saldo += uang
+        riwayat.append(f"Pemasukan Rp.{uang}")
+        if uang <= 0:
             print('Uang harus lebih dari 0')
             continue
-        elif saldo >= 0:
-            print(f'Saldo berhasil ditambahkan sebesar Rp.{saldo}')
+        elif uang >= 0:
+            print(f'Saldo berhasil ditambahkan sebesar Rp.{uang}')
        except ValueError:
            print('Input harus berupa angka')
            continue
-       saldo + saldo
        break
- return saldo
- 
-def Pengeluaran(saldo):
+  return saldo
+def Pengeluaran(saldo,riwayat):
     while True:
          try:     
-          print(f'saldo masuk {saldo}')
+          print(f'Saldo sekarang {saldo}')
           uang_keluar= int(input('Masukan uang pengeluaran: '))
+          riwayat.append(f"Pengeluaran Rp.{uang_keluar}")
+          saldo -= uang_keluar
           if uang_keluar <= 0:
             print('Uang harus lebih dari 0')
             continue
           elif uang_keluar > saldo:
              print('Saldo anda tidak mencukupi')
              continue
-          saldo = saldo - uang_keluar
-          print(f'Saldo anda sebesar Rp.{saldo}')
+          elif uang_keluar <= saldo: 
+           print(f'Saldo anda sekarang sebesar Rp.{saldo}')
          except ValueError:
             print('Input harus angka!!')
             continue
          break
-    return uang_keluar
+    return saldo
 
-def riwayat(saldo):
-   print('Saldo anda tersedia Rp.{saldo:.2f} ')
+def Riwayat(riwayat):
+   if len(riwayat) == 0:
+      print('Belum ada riwayat transaksi')
+      return
+   
+   print('======Riwayat Transaksi======')
+
+   nomor = 1
+   for transaksi in riwayat:
+      print(f'{nomor}. {transaksi}')
+      nomor += 1
