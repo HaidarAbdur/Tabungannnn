@@ -18,7 +18,7 @@ def Pemasukan(saldo,riwayat):
 def Pengeluaran(saldo,riwayat):
     while True:
          try:     
-          print(f'Saldo sekarang {saldo}')
+          print(f'Saldo sekarang Rp.{saldo}')
           uang_keluar= int(input('Masukan uang pengeluaran: '))
           riwayat.append(f"Pengeluaran Rp.{uang_keluar}")
           saldo -= uang_keluar
@@ -41,9 +41,10 @@ def Riwayat(riwayat):
       print('Belum ada riwayat transaksi')
       return
    
-   print('======Riwayat Transaksi======')
+   print('======RIWAYAT TRANSAKSI======')
 
    nomor = 1
    for transaksi in riwayat:
       print(f'{nomor}. {transaksi}')
       nomor += 1
+   

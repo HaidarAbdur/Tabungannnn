@@ -31,7 +31,13 @@ while True:
       Riwayat(riwayat)
 
     elif user == '4':
-      pass
+       reset = input('Apakah ingin mereset saldo anda?[y/n]: ')
+       if reset == 'y':
+         saldo = 0
+         print(f'Saldo berhasil direset Rp.{saldo}')
+       elif reset == 'n':
+         print()
+         continue
 
     elif user == '0':
      print('Program selesai🙏!')
