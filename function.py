@@ -20,19 +20,21 @@ def Pengeluaran(saldo,riwayat):
          try:     
           print(f'Saldo sekarang Rp.{saldo}')
           uang_keluar= int(input('Masukan uang pengeluaran: '))
-          riwayat.append(f"Pengeluaran Rp.{uang_keluar}")
-          saldo -= uang_keluar
+          note = input('Catatan pengeluaran: ')
+          if note:
+             print()
           if uang_keluar <= 0:
             print('Uang harus lebih dari 0')
             continue
-          elif uang_keluar > saldo:
-             print('Saldo anda tidak mencukupi')
-             continue
-          elif uang_keluar <= saldo: 
+          elif uang_keluar >= saldo: 
+             print('Maaf,saldo tidak cukup')
+          else:
+           saldo -= uang_keluar
            print(f'Saldo anda sekarang sebesar Rp.{saldo}')
          except ValueError:
             print('Input harus angka!!')
             continue
+         riwayat.append ((uang_keluar, note))
          break
     return saldo
 
@@ -47,4 +49,8 @@ def Riwayat(riwayat):
    for transaksi in riwayat:
       print(f'{nomor}. {transaksi}')
       nomor += 1
+
+
+  
+
    
