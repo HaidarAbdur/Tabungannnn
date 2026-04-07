@@ -1,0 +1,35 @@
+{
+    "saldo": 100000,
+    "transaksi": [
+        {
+            "tanggal": "2026-04-07 19:36",
+            "tipe": "Pemasukan",
+            "jumlah": 10000,
+            "keterangan": "bonus"
+        },
+        {
+            "tanggal": "2026-04-07 19:36",
+            "tipe": "Pengeluaran",
+            "jumlah": 5000,
+            "keterangan": "jajann"
+        },
+        {
+            "tanggal": "2026-04-07 19:36",
+            "tipe": "Pengeluaran",
+            "jumlah": 5000,
+            "keterangan": "jajann"
+        },
+        {
+            "tanggal": "2026-04-07 19:42",
+            "tipe": "Pemasukan",
+            "jumlah": 200000,
+            "keterangan": "bonus"
+        },
+        {
+            "tanggal": "2026-04-07 19:43",
+            "tipe": "Pengeluaran",
+            "jumlah": 100000,
+            "keterangan": "jajan"
+        }
+    ]
+}
