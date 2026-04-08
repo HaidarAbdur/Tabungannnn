@@ -69,17 +69,14 @@ import json
 from datetime import datetime
 import os
 
-# File untuk menyimpan data (persistent)
 DATA_FILE = "tabunganku_data.json"
 
-# Load data
 def load_data():
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r") as f:
             return json.load(f)
     return {"saldo": 0, "transaksi": []}
 
-# Save data
 def save_data(data):
     with open(DATA_FILE, "w") as f:
         json.dump(data, f, indent=4, default=str)
@@ -87,79 +84,97 @@ def save_data(data):
 st.set_page_config(page_title="TabungKu", page_icon="💰", layout="centered")
 
 data = load_data()
-saldo = data["saldo"]
-transaksi = data["transaksi"]
+saldo = data.get("saldo", 0)
+transaksi = data.get("transaksi", [])
 
 st.title("💰 TabungKu - Aplikasi Tabunganmu")
-st.markdown("### Kelola keuanganmu dengan mudah dan aman")
+st.markdown("### Kelola keuanganmu dengan mudah")
 
-# Tampilkan saldo
-st.metric(label="Saldo Saat Ini", value=f"Rp {saldo:,.0f}")
+# Tampilkan Saldo
+st.metric(label="**Saldo Saat Ini**", value=f"Rp {saldo:,.0f}", delta=None)
 
-# Tab navigation
-tab1, tab2, tab3 = st.tabs(["➕ Tambah Pemasukan", "➖ Catat Pengeluaran", "📜 Riwayat Transaksi"])
+tab1, tab2, tab3, tab4 = st.tabs(["➕ Pemasukan", "➖ Pengeluaran", "📜 Riwayat", "⚙️ Pengaturan"])
 
 with tab1:
     st.subheader("Tambah Pemasukan")
-    jumlah = st.number_input("Jumlah Pemasukan (Rp)", min_value=0, step=1000)
-    keterangan = st.text_input("Keterangan (contoh: Gaji, Bonus, dll)")
-    if st.button("Tambah ke Saldo"):
-        if jumlah > 0 and keterangan:
+    jumlah = st.number_input("Jumlah (Rp)", min_value=1000, step=1000)
+    ket = st.text_input("Keterangan (contoh: Gaji, THR, dll)")
+    if st.button("Tambahkan", type="primary"):
+        if jumlah > 0 and ket:
             saldo += jumlah
             transaksi.append({
-                "tanggal": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "tanggal": datetime.now().strftime("%d/%m/%Y %H:%M"),
                 "tipe": "Pemasukan",
                 "jumlah": jumlah,
-                "keterangan": keterangan
+                "keterangan": ket
             })
             data["saldo"] = saldo
             data["transaksi"] = transaksi
             save_data(data)
-            st.success(f"Berhasil menambah Rp {jumlah:,} !")
+            st.success("✅ Pemasukan berhasil ditambahkan!")
             st.rerun()
         else:
-            st.error("Isi jumlah dan keterangan")
+            st.warning("Isi jumlah dan keterangan")
 
 with tab2:
     st.subheader("Catat Pengeluaran")
-    jumlah_keluar = st.number_input("Jumlah Pengeluaran (Rp)", min_value=0, step=1000)
-    keterangan_keluar = st.text_input("Keterangan Pengeluaran (contoh: Makan, Bensin)")
-    if st.button("Kurangi Saldo"):
-        if jumlah_keluar > 0 and keterangan_keluar:
-            if jumlah_keluar <= saldo:
-                saldo -= jumlah_keluar
-                transaksi.append({
-                    "tanggal": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                    "tipe": "Pengeluaran",
-                    "jumlah": jumlah_keluar,
-                    "keterangan": keterangan_keluar
-                })
-                data["saldo"] = saldo
-                data["transaksi"] = transaksi
-                save_data(data)
-                st.success(f"Berhasil mengurangi Rp {jumlah_keluar:,} !")
-                st.rerun()
-            else:
-                st.error("Saldo tidak cukup!")
-        else:
-            st.error("Isi jumlah dan keterangan")
+    jumlah_k = st.number_input("Jumlah Pengeluaran (Rp)", min_value=1000, step=1000)
+    ket_k = st.text_input("Keterangan Pengeluaran")
+    if st.button("Kurangi Saldo", type="primary"):
+        if jumlah_k > saldo:
+            st.error("❌ Saldo tidak cukup!")
+        elif jumlah_k > 0 and ket_k:
+            saldo -= jumlah_k
+            transaksi.append({
+                "tanggal": datetime.now().strftime("%d/%m/%Y %H:%M"),
+                "tipe": "Pengeluaran",
+                "jumlah": jumlah_k,
+                "keterangan": ket_k
+            })
+            data["saldo"] = saldo
+            data["transaksi"] = transaksi
+            save_data(data)
+            st.success("✅ Pengeluaran berhasil dicatat!")
+            st.rerun()
 
 with tab3:
     st.subheader("Riwayat Transaksi")
     if transaksi:
         df = pd.DataFrame(transaksi)
-        df["jumlah"] = df.apply(lambda x: f"Rp {x['jumlah']:,.0f}" if x['tipe'] == "Pemasukan" else f"-Rp {x['jumlah']:,.0f}", axis=1)
+        df["jumlah"] = df.apply(lambda x: f"Rp {x['jumlah']:,.0f}" if x['tipe']=="Pemasukan" else f"-Rp {x['jumlah']:,.0f}", axis=1)
         st.dataframe(df[["tanggal", "tipe", "jumlah", "keterangan"]], use_container_width=True)
         
-        # Ringkasan
-        total_masuk = sum(t["jumlah"] for t in transaksi if t["tipe"] == "Pemasukan")
-        total_keluar = sum(t["jumlah"] for t in transaksi if t["tipe"] == "Pengeluaran")
-        st.info(f"Total Pemasukan: Rp {total_masuk:,.0f} | Total Pengeluaran: Rp {total_keluar:,.0f}")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.info(f"Total Pemasukan: Rp {sum(t['jumlah'] for t in transaksi if t['tipe']=='Pemasukan'):,.0f}")
+        with col2:
+            st.info(f"Total Pengeluaran: Rp {sum(t['jumlah'] for t in transaksi if t['tipe']=='Pengeluaran'):,.0f}")
     else:
-        st.info("Belum ada transaksi. Mulai tambah pemasukan atau pengeluaran!")
+        st.info("Belum ada transaksi")
 
-# Footer
-st.caption("Data tersimpan otomatis di file JSON • Bisa diakses kapan saja")
+with tab4:
+    st.subheader("⚙️ Pengaturan")
+    st.warning("⚠️ Fitur ini akan menghapus semua data!")
+    
+    if st.button("🔄 Reset Saldo ke Rp 0", type="secondary"):
+        st.session_state.reset_confirm = True
+
+    if st.session_state.get("reset_confirm", False):
+        st.error("❗ Apakah Anda yakin ingin reset saldo ke 0 dan menghapus semua riwayat?")
+        col_yes, col_no = st.columns(2)
+        with col_yes:
+            if st.button("✅ Ya, Reset Sekarang"):
+                data = {"saldo": 0, "transaksi": []}
+                save_data(data)
+                st.success("✅ Semua data telah direset!")
+                st.session_state.reset_confirm = False
+                st.rerun()
+        with col_no:
+            if st.button("❌ Batal"):
+                st.session_state.reset_confirm = False
+                st.rerun()
+
+st.caption("Data otomatis tersimpan • Dibuat dengan Python + Streamlit")
        
 
 
