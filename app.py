@@ -68,18 +68,23 @@ import pandas as pd
 from datetime import datetime
 import mysql.connector
 
-conn = mysql.connector.connect(
-    host= "localhost",
-    user= "root",
-    password= "",
-    database= "db_tabungan"
-)
+@st.cache_resource
+def init_connection():
+    return mysql.connector.connect(
+        host=st.secrets["mysql"]["host"],
+        user=st.secrets["mysql"]["user"],
+        password=st.secrets["mysql"]["password"],
+        database=st.secrets["mysql"]["database"]
+    )
 
-cursor = conn.cursor()
+conn = init_connection()
 
 def load_data():
+    conn.ping(reconnect=True)
+    cursor = conn.cursor()
     cursor.execute("SELECT * FROM transaksi")
-    rows = cursor.fetchall
+    rows = cursor.fetchall()
+    cursor.close()
 
     transaksi = []
     saldo = 0
@@ -93,12 +98,12 @@ def load_data():
         }
         transaksi.append(t)
 
-        if t["tipe"]=="pemasukan":
+        if t["tipe"]=="Pemasukan":
             saldo += t["jumlah"]
         else:
             saldo -= t["jumlah"]
 
-        return saldo, transaksi
+    return saldo, transaksi
 
 st.set_page_config(page_title="TabungKu", page_icon="💰", layout="centered")
 
@@ -118,11 +123,14 @@ with tab1:
     ket = st.text_input("Keterangan (contoh: Gaji, THR, dll)")
     if st.button("Tambahkan", type="primary"):
         if jumlah > 0 and ket:
+            conn.ping(reconnect=True)
+            cursor = conn.cursor()
             tanggal = datetime.now().strftime("%d/%m/%Y %H:%M")
             sql = "INSERT INTO transaksi (tanggal, tipe, jumlah, keterangan) VALUES (%s, %s, %s, %s)"
             val = (tanggal, "Pemasukan", jumlah, ket)
             cursor.execute(sql, val)
             conn.commit()
+            cursor.close()
             st.success("✅ Pemasukan berhasil ditambahkan!")
             st.rerun()
         else:
@@ -136,13 +144,18 @@ with tab2:
         if jumlah_k > saldo:
             st.error("❌ Saldo tidak cukup!")
         elif jumlah_k > 0 and ket_k:
+            conn.ping(reconnect=True)
+            cursor = conn.cursor()
             tanggal = datetime.now().strftime("%d/%m/%Y %H:%M")
             sql = "INSERT INTO transaksi (tanggal, tipe, jumlah, keterangan) VALUES (%s, %s, %s, %s)"
             val = (tanggal, "Pengeluaran", jumlah_k, ket_k)
             cursor.execute(sql, val)
             conn.commit()
+            cursor.close()
             st.success("✅ Pengeluaran berhasil dicatat!")
             st.rerun()
+        else:
+            st.warning("Isi jumlah dan keterangan")
 
 with tab3:
     st.subheader("Riwayat Transaksi")
@@ -171,8 +184,11 @@ with tab4:
         col_yes, col_no = st.columns(2)
         with col_yes:
             if st.button("✅ Ya, Reset Sekarang"):
-                data = {"saldo": 0, "transaksi": []}
-                save_data(data)
+                conn.ping(reconnect=True)
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM transaksi")
+                conn.commit()
+                cursor.close()
                 st.success("✅ Semua data telah direset!")
                 st.session_state.reset_confirm = False
                 st.rerun()
