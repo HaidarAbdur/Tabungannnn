@@ -62,32 +62,50 @@
 #     else:
 #      print('Input tidak valid!')
 #     continue
+
 import streamlit as st
 import pandas as pd
-import json
 from datetime import datetime
-import os
+import mysql.connector
 
-DATA_FILE = "tabunganku_data.json"
+conn = mysql.connector.connect(
+    host= "localhost",
+    user= "root",
+    password= "",
+    database= "db_tabungan"
+)
+
+cursor = conn.cursor()
 
 def load_data():
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "r") as f:
-            return json.load(f)
-    return {"saldo": 0, "transaksi": []}
+    cursor.execute("SELECT * FROM transaksi")
+    rows = cursor.fetchall
 
-def save_data(data):
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f, indent=4, default=str)
+    transaksi = []
+    saldo = 0
+
+    for row in rows:
+        t = {
+            "tanggal":row[1],
+            "tipe":row[2],
+            "jumlah":row[3],
+            "keterangan":row[4]
+        }
+        transaksi.append(t)
+
+        if t["tipe"]=="pemasukan":
+            saldo += t["jumlah"]
+        else:
+            saldo -= t["jumlah"]
+
+        return saldo, transaksi
 
 st.set_page_config(page_title="TabungKu", page_icon="💰", layout="centered")
 
-data = load_data()
-saldo = data.get("saldo", 0)
-transaksi = data.get("transaksi", [])
+saldo,transaksi = load_data()
 
 st.title("💰 Tabunganku - Aplikasi Tabungan")
-st.markdown("### Kelola keuangan dengan mudah diera digital")
+st.markdown("### Kelola keuangan dengan mudah dan aman diera digital")
 
 # Tampilkan Saldo
 st.metric(label="**Saldo Saat Ini**", value=f"Rp {saldo:,.0f}", delta=None)
@@ -100,16 +118,11 @@ with tab1:
     ket = st.text_input("Keterangan (contoh: Gaji, THR, dll)")
     if st.button("Tambahkan", type="primary"):
         if jumlah > 0 and ket:
-            saldo += jumlah
-            transaksi.append({
-                "tanggal": datetime.now().strftime("%d/%m/%Y %H:%M"),
-                "tipe": "Pemasukan",
-                "jumlah": jumlah,
-                "keterangan": ket
-            })
-            data["saldo"] = saldo
-            data["transaksi"] = transaksi
-            save_data(data)
+            tanggal = datetime.now().strftime("%d/%m/%Y %H:%M")
+            sql = "INSERT INTO transaksi (tanggal, tipe, jumlah, keterangan) VALUES (%s, %s, %s, %s)"
+            val = (tanggal, "Pemasukan", jumlah, ket)
+            cursor.execute(sql, val)
+            conn.commit()
             st.success("✅ Pemasukan berhasil ditambahkan!")
             st.rerun()
         else:
@@ -123,16 +136,11 @@ with tab2:
         if jumlah_k > saldo:
             st.error("❌ Saldo tidak cukup!")
         elif jumlah_k > 0 and ket_k:
-            saldo -= jumlah_k
-            transaksi.append({
-                "tanggal": datetime.now().strftime("%d/%m/%Y %H:%M"),
-                "tipe": "Pengeluaran",
-                "jumlah": jumlah_k,
-                "keterangan": ket_k
-            })
-            data["saldo"] = saldo
-            data["transaksi"] = transaksi
-            save_data(data)
+            tanggal = datetime.now().strftime("%d/%m/%Y %H:%M")
+            sql = "INSERT INTO transaksi (tanggal, tipe, jumlah, keterangan) VALUES (%s, %s, %s, %s)"
+            val = (tanggal, "Pengeluaran", jumlah_k, ket_k)
+            cursor.execute(sql, val)
+            conn.commit()
             st.success("✅ Pengeluaran berhasil dicatat!")
             st.rerun()
 
@@ -173,7 +181,7 @@ with tab4:
                 st.session_state.reset_confirm = False
                 st.rerun()
 
-st.caption("• Created by HaidarCode").underline
+st.caption("• Created by HaidarCode")
        
 
 
