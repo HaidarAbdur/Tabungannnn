@@ -81,7 +81,7 @@ conn = init_connection()
 
 def load_data():
     conn.ping(reconnect=True)
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary =True)
     cursor.execute("SELECT * FROM transaksi")
     rows = cursor.fetchall()
     cursor.close()
@@ -91,10 +91,10 @@ def load_data():
 
     for row in rows:
         t = {
-            "tanggal":row[1],
-            "tipe":row[2],
-            "jumlah":row[3],
-            "keterangan":row[4]
+            "tanggal":row["tanggal"],
+            "tipe":row["tipe"],
+            "jumlah":row["jumlah"],
+            "keterangan":row["keterangan"]
         }
         transaksi.append(t)
 
