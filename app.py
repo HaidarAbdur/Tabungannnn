@@ -1,33 +1,25 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-import mysql.connector
+import requests
 
-@st.cache_resource
-def init_connection():
-    return mysql.connector.connect(
-        host=st.secrets["mysql"]["host"],
-        user=st.secrets["mysql"]["user"],
-        password=st.secrets["mysql"]["password"],
-        database=st.secrets["mysql"]["database"]
-    )
-
-try:
-    conn = init_connection()
-except mysql.connector.Error as err:
-    st.error(f"❌ Gagal koneksi ke Database: {err}")
-    st.info("💡 Pastikan MySQL/XAMPP sudah aktif, lalu refresh halaman ini.")
-    st.stop()
+API_URL = "http://localhost:8000/transaksi"
 
 def load_data():
     try:
-        conn.ping(reconnect=True)
-        cursor = conn.cursor(dictionary =True)
-        cursor.execute("SELECT * FROM transaksi")
-        rows = cursor.fetchall()
-        cursor.close()
-    except mysql.connector.Error as err:
-        st.error(f"❌ Gagal mengambil data: {err}")
+        response = requests.get(API_URL)
+        
+        if response.status_code ==200:
+            data = response.json()
+            return data["saldo"], data["transaksi"]
+        else:
+            st.error(f"❌ Gagal mengambil data")
+            return 0, []
+
+    except requests.exceptions.RequestException as err:
+        st.error(f"❌ Tidak dapat terhubung ke API {err}")
+
+        st.info("Pastikan server FastAPI (uvicorn) berjalan di terminal")
         return 0, []
 
     transaksi = []
@@ -66,47 +58,54 @@ with tab1:
     jumlah = st.number_input("Jumlah (Rp)", min_value=1000, step=1000)
     ket = st.text_input("Keterangan (contoh: Gaji, THR, dll)")
     if st.button("Tambahkan", type="primary"):
-      try:
         if jumlah > 0 and ket:
-            conn.ping(reconnect=True)
-            cursor = conn.cursor()
-            tanggal = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            sql = "INSERT INTO transaksi (tanggal, tipe, jumlah, keterangan) VALUES (%s, %s, %s, %s)"
-            val = (tanggal, "Pemasukan", jumlah, ket)
-            cursor.execute(sql, val)
-            conn.commit()
-            cursor.close()
-            st.success("✅ Pemasukan berhasil ditambahkan!")
-            st.rerun()
+          try:
+            paket_data = {
+                "tipe":"Pemasukan",
+                "jumlah":jumlah,
+                "keterangan":ket
+            }
+            response = requests.post(API_URL, json=paket_data)
+
+            if response.status_code == 200:
+                st.success("✅ Berhasil ditambahkan!")
+                st.rerun()
+            else:
+                st.error("Gagal menambahkan data")
+        
+          except requests.exceptions.RequestException as err:
+            st.error(f"Gagal terhubung ke API")
         else:
             st.warning("Isi jumlah dan keterangan")
-      except mysql.connector.Error as err:
-        st.error(f"❌ Gagal menambah data: {err}")
-
 
 with tab2:
     st.subheader("Catat Pengeluaran")
     jumlah_k = st.number_input("Jumlah Pengeluaran (Rp)", min_value=1000, step=1000)
     ket_k = st.text_input("Keterangan Pengeluaran")
     if st.button("Kurangi Saldo", type="primary"):
-      try:
         if jumlah_k > saldo:
-            st.error("❌ Saldo tidak cukup!")
+            st.error("Saldo tidak cukup")
         elif jumlah_k > 0 and ket_k:
-            conn.ping(reconnect=True)
-            cursor = conn.cursor()
-            tanggal = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            sql = "INSERT INTO transaksi (tanggal, tipe, jumlah, keterangan) VALUES (%s, %s, %s, %s)"
-            val = (tanggal, "Pengeluaran", jumlah_k, ket_k)
-            cursor.execute(sql, val)
-            conn.commit()
-            cursor.close()
-            st.success("✅ Pengeluaran berhasil dicatat!")
-            st.rerun()
-        else:
-            st.warning("Isi jumlah dan keterangan")
-      except mysql.connector.Error as err:
-        st.error(f"❌ Gagal mengurangi data: {err}")
+          try:
+            paket_data = {
+                "tipe":"Pengeluaran",
+                "jumlah":jumlah_k,
+                "keterangan":ket_k
+            }
+            response = requests.post(API_URL, json=paket_data)
+
+            if response.status_code == 200:
+                st.success("✅ Berhasil ditambahkan!")
+                st.rerun()
+            else:
+                st.error("Gagal menambahkan data")
+
+          except requests.exceptions.RequestException as err:
+            st.error(f"Gagal terhubung ke API")
+    else:
+        st.warning("Isi jumlah dan keterangan")
+        
+        
 
 with tab3:
     st.subheader("Riwayat Transaksi")
@@ -136,16 +135,14 @@ with tab4:
         with col_yes:
             if st.button("✅ Ya, Reset Sekarang"):
                 try:    
-                    conn.ping(reconnect=True)
-                    cursor = conn.cursor()
-                    cursor.execute("DELETE FROM transaksi")
-                    conn.commit()
-                    cursor.close()
-                    st.success("✅ Semua data telah direset!")
-                    st.session_state.reset_confirm = False
-                    st.rerun()
-                except mysql.connector.Error as err:
-                    st.error(f"❌ Gagal mereset data: {err}")
+                    response = requests.delete(API_URL)
+                    if response.status_code == 200:
+                        st.success("✅ Semua data telah direset!")
+                        st.session_state.reset_confirm = False
+                        st.rerun()
+                except requests.exceptions.RequestException as err:
+                    st.error(f"Gagal terhubung ke API")
+
         with col_no:
             if st.button("❌ Batal"):
                 st.session_state.reset_confirm = False
